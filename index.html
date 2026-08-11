@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chad Nislow — Universe Navigation Concept</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --void:#080B14;
+  --panel:#10141F;
+  --line:rgba(180,196,210,0.4);
+  --brass:#D9AE68;
+  --coral:#E4694A;
+  --paper:#EDE6D6;
+  --paper-dim:#8790A0;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;background:var(--void);overflow:hidden;font-family:'Inter',sans-serif;}
+
+canvas#stars{position:fixed;inset:0;z-index:0;}
+.nebula{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(600px 500px at 18% 24%, rgba(228,105,74,0.07), transparent 60%),
+    radial-gradient(700px 600px at 82% 78%, rgba(90,120,200,0.08), transparent 60%),
+    radial-gradient(500px 400px at 70% 15%, rgba(217,174,104,0.05), transparent 60%);
+  animation:drift 80s ease-in-out infinite alternate;
+}
+@keyframes drift{to{transform:scale(1.06) translate(1%,-1%);}}
+
+.twinkle{position:fixed;border-radius:50%;background:#fff;z-index:0;pointer-events:none;}
+
+#app{position:fixed;inset:0;z-index:1;}
+
+#eyebrow{
+  position:fixed;top:28px;left:32px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;
+  color:var(--paper-dim);text-transform:uppercase;z-index:5;
+}
+#tag{
+  position:fixed;bottom:26px;left:32px;
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;
+  color:rgba(135,144,160,0.6);z-index:5;
+}
+#breadcrumb{
+  position:fixed;top:28px;right:32px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper-dim);
+  z-index:6;opacity:0;transition:opacity .5s ease;cursor:pointer;
+}
+#app.expanded #breadcrumb{opacity:1;}
+
+svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;}
+.ring{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:1 4;transition:opacity .5s ease, stroke .4s ease;}
+.edge{stroke:rgba(217,174,104,0.55);stroke-width:1.2;stroke-dasharray:2 5;}
+
+#graph{position:fixed;inset:0;z-index:2;}
+.body{
+  position:absolute;border-radius:50%;transform:translate(-50%,-50%);
+  cursor:pointer;transition:box-shadow .3s ease, opacity .5s ease, border-color .3s ease;
+}
+.sun{
+  background:radial-gradient(circle at 35% 30%, #F4DFA8, var(--brass) 60%, #9c7a3b 100%);
+  box-shadow:0 0 50px rgba(217,174,104,0.45), 0 0 120px rgba(217,174,104,0.15);
+}
+.sun-label{
+  position:absolute;top:100%;left:50%;transform:translate(-50%,10px);
+  font-family:'Fraunces',serif;font-weight:600;color:var(--paper);
+  font-size:13px;white-space:nowrap;letter-spacing:.03em;text-align:center;
+  pointer-events:none;
+}
+.planet{
+  background:radial-gradient(circle at 32% 28%, #3a4258, #1c2130 70%);
+  border:1px solid rgba(180,196,210,0.65);
+}
+.planet:hover{box-shadow:0 0 26px rgba(217,174,104,0.35);}
+.planet.active{border-color:var(--coral);box-shadow:0 0 40px rgba(228,105,74,0.45);}
+.planet.dim{opacity:0.3;}
+.planet-label{
+  position:absolute;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--paper-dim);
+  white-space:nowrap;pointer-events:none;transition:opacity .4s ease, color .3s ease;
+  transform:translateX(-50%);
+}
+.planet-label.active{color:var(--brass);font-size:12px;}
+.moon{background:#20263a;border:1px solid rgba(228,105,74,0.6);}
+.moon-label{
+  position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+  color:var(--paper-dim);white-space:nowrap;pointer-events:none;transition:color .2s ease;
+}
+
+.pulse{
+  position:fixed;border-radius:50%;border:1.5px solid var(--coral);
+  transform:translate(-50%,-50%);pointer-events:none;z-index:3;
+  animation:pulseOut .8s ease-out forwards;
+}
+@keyframes pulseOut{
+  0%{width:10px;height:10px;opacity:.9;}
+  100%{width:140px;height:140px;opacity:0;}
+}
+
+#panel{
+  position:fixed;top:0;right:0;height:100%;width:min(420px,86vw);
+  background:rgba(16,20,31,0.92);backdrop-filter:blur(6px);
+  border-left:1px solid var(--line);
+  transform:translateX(100%);transition:transform .7s cubic-bezier(.22,.9,.3,1);
+  z-index:7;padding:64px 38px 40px;overflow-y:auto;
+}
+#app.expanded #panel{transform:translateX(0);}
+#panel .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--brass);text-transform:uppercase;}
+#panel h2{font-family:'Fraunces',serif;font-weight:600;color:var(--paper);font-size:30px;margin:10px 0 16px;}
+#panel p{color:#b8bfce;line-height:1.65;font-size:14.5px;}
+#panel .items{margin-top:24px;}
+#panel .item{
+  padding:15px 0;border-top:1px solid var(--line);
+  color:var(--paper-dim);font-size:13.5px;display:flex;justify-content:space-between;
+  cursor:pointer;transition:color .2s ease;
+}
+#panel .item:hover{color:var(--paper);}
+#panel .item span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--brass);}
+#panel .close{position:absolute;top:26px;right:32px;color:var(--paper-dim);cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;}
+#panel .close:hover{color:var(--paper);}
+@media (max-width:640px){#panel{width:100vw;padding:56px 22px 30px;} #panel h2{font-size:24px;}}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="nebula"></div>
+
+<div id="app">
+  <div id="eyebrow">Chad Nislow</div>
+  <div id="tag">a universe, not a menu — size ≈ attention, speed ≈ distance from center</div>
+  <div id="breadcrumb" onclick="collapse()">✕ back to the whole system</div>
+  <svg id="orbits"></svg>
+  <div id="graph"></div>
+
+  <div id="panel">
+    <div class="close" onclick="collapse()">✕ CLOSE</div>
+    <div class="eyebrow" id="pEyebrow">Section</div>
+    <h2 id="pTitle"></h2>
+    <p id="pBlurb"></p>
+    <div class="items" id="pItems"></div>
+  </div>
+</div>
+
+<script>
+/* ---- placeholder "mass" + orbit values ----
+   Later: orbitRadius / size / period should be derived from real
+   signals (visits, recency, however "attention" gets defined).
+   For now these are hand-set to demonstrate the feel. Periods are
+   in seconds per full revolution — slow and ambient on purpose. */
+const planets = [
+  { id:'about', label:'About', size:34, orbit:130, period:260, angle0:0.4,
+    blurb:'Who I am, beyond the résumé — the throughline connecting craft, travel, and work.',
+    children:['Origin story','How I think','Right now'] },
+  { id:'professional', label:'Professional', size:44, orbit:210, period:340, angle0:2.6,
+    blurb:'Career history, skills, and a résumé — for anyone here to evaluate the work.',
+    children:['Career timeline','Skills','Résumé ↓'] },
+  { id:'projects', label:'Projects', size:38, orbit:280, period:420, angle0:4.4,
+    blurb:'A portfolio of things built and made — the craft in practice.',
+    children:['Project One','Project Two','Project Three'] },
+  { id:'travels', label:'Travels', size:46, orbit:350, period:500, angle0:1.1,
+    blurb:'Photos and notes from places I\u2019ve been — a visual travel log.',
+    children:['Asia','Europe','Americas'] },
+  { id:'media', label:'Media', size:28, orbit:415, period:580, angle0:3.7,
+    blurb:'What I\u2019m consuming and recommending — books, film, shows, and favorites.',
+    children:['Reading now','Recently watched','All-time favorites'] },
+];
+const TILT = 0.58; // squashes circular orbits into a viewed-at-an-angle ellipse — kept mild so paths stay readable
+
+let W,H,cx,cy;
+let state = { expanded:false, activeId:null, t:0 };
+let cam = { scale:1, focalX:0, focalY:0, px:0, py:0 };
+let camTarget = { scale:1, focalX:0, focalY:0 };
+
+// persistent DOM references, built once (or rebuilt only when the
+// expanded/active set changes) — never destroyed on every animation frame,
+// so click handlers stay attached and reliable.
+const dom = { planets:{}, rings:{}, labels:{}, moons:{}, activeEdge:null };
+
+function measure(){ W=innerWidth; H=innerHeight; cx=W/2; cy=H/2; setCamTarget(); }
+
+function setCamTarget(){
+  if(!state.expanded){ camTarget = { scale:1, focalX:cx, focalY:cy }; }
+  else { camTarget = { scale:2.0, focalX:W*0.30, focalY:H*0.5 }; }
+}
+
+function worldPos(p, t){
+  const a = p.angle0 + (2*Math.PI/p.period)*t;
+  return { x: Math.cos(a)*p.orbit, y: Math.sin(a)*p.orbit*TILT };
+}
+function screenOf(wx,wy){
+  return { x: cam.focalX + (wx-cam.px)*cam.scale, y: cam.focalY + (wy-cam.py)*cam.scale };
+}
+
+function drawStars(){
+  const c = document.getElementById('stars');
+  c.width = innerWidth; c.height = innerHeight;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff';
+  for(let i=0;i<160;i++){
+    const x = Math.random()*c.width, y = Math.random()*c.height;
+    const r = Math.random()*1.1+0.2;
+    ctx.globalAlpha = Math.random()*0.6+0.15;
+    ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  document.querySelectorAll('.twinkle').forEach(n=>n.remove());
+  for(let i=0;i<10;i++){
+    const d = document.createElement('div');
+    d.className='twinkle';
+    const size = Math.random()*2+1.4;
+    d.style.width=d.style.height=size+'px';
+    d.style.left = Math.random()*innerWidth+'px';
+    d.style.top = Math.random()*innerHeight+'px';
+    d.style.animation = `pulseTwinkle ${3+Math.random()*4}s ease-in-out ${Math.random()*3}s infinite`;
+    document.body.appendChild(d);
+  }
+}
+const styleTag = document.createElement('style');
+styleTag.textContent = `@keyframes pulseTwinkle{0%,100%{opacity:.15}50%{opacity:.9}}`;
+document.head.appendChild(styleTag);
+
+function mkEl(tag,cls){ const e=document.createElement(tag); e.className=cls; return e; }
+function mkSvg(tag,cls){ const e=document.createElementNS('http://www.w3.org/2000/svg',tag); if(cls) e.setAttribute('class',cls); return e; }
+
+function buildStatic(){
+  const graph = document.getElementById('graph');
+  const svg = document.getElementById('orbits');
+  graph.innerHTML=''; svg.innerHTML='';
+  dom.planets={}; dom.rings={}; dom.labels={};
+
+  const sun = mkEl('div','body sun'); sun.style.width=sun.style.height='60px';
+  sun.onclick = ()=>{ if(state.expanded) collapse(); };
+  const sl = mkEl('div','sun-label'); sl.textContent='CHAD NISLOW';
+  sun.appendChild(sl);
+  graph.appendChild(sun);
+  dom.sun = sun;
+
+  planets.forEach(p=>{
+    const ring = mkSvg('ellipse','ring');
+    svg.appendChild(ring); dom.rings[p.id]=ring;
+
+    const node = mkEl('div','body planet');
+    node.style.width = node.style.height = p.size+'px';
+    node.onclick = ()=> selectPlanet(p.id);
+    graph.appendChild(node); dom.planets[p.id]=node;
+
+    const label = mkEl('div','planet-label');
+    label.textContent = p.label;
+    graph.appendChild(label); dom.labels[p.id]=label;
+  });
+}
+
+function buildDynamic(){
+  // rebuild only the moon layer — happens rarely (on select/collapse), not every frame
+  Object.values(dom.moons).forEach(m=>{ m.node.remove(); m.label.remove(); m.edge.remove(); });
+  dom.moons = {};
+  if(dom.activeEdge){ dom.activeEdge.remove(); dom.activeEdge=null; }
+  const svg = document.getElementById('orbits');
+  const graph = document.getElementById('graph');
+
+  planets.forEach(p=>{
+    const isActive = state.activeId===p.id;
+    dom.planets[p.id].classList.toggle('active', isActive);
+    dom.planets[p.id].classList.toggle('dim', state.expanded && !isActive);
+    dom.labels[p.id].classList.toggle('active', isActive);
+    dom.labels[p.id].style.opacity = (state.expanded && !isActive) ? '0' : '1';
+    dom.rings[p.id].style.opacity = (state.expanded && !isActive) ? '0.12' : '0.55';
+  });
+
+  if(!state.expanded) return;
+
+  dom.activeEdge = mkSvg('line','edge');
+  svg.appendChild(dom.activeEdge);
+
+  const active = planets.find(p=>p.id===state.activeId);
+  active.children.forEach((label,i)=>{
+    const node = mkEl('div','body moon');
+    node.style.width = node.style.height = '9px';
+    node.onclick = ()=> openItem(label);
+    graph.appendChild(node);
+    const lab = mkEl('div','moon-label'); lab.textContent = label;
+    graph.appendChild(lab);
+    const edge = mkSvg('line','edge'); edge.setAttribute('opacity','0.35');
+    svg.appendChild(edge);
+    dom.moons[label+i] = { node, label:lab, edge, i };
+  });
+}
+
+function updateFrame(){
+  const sunScreen = screenOf(0,0);
+  dom.sun.style.left = sunScreen.x+'px'; dom.sun.style.top = sunScreen.y+'px';
+  dom.sun.style.width = dom.sun.style.height = (60*cam.scale)+'px';
+
+  planets.forEach(p=>{
+    const wp = worldPos(p, state.t);
+    const sp = screenOf(wp.x, wp.y);
+    const isActive = state.activeId===p.id;
+    const size = (isActive ? p.size*1.25 : p.size) * cam.scale;
+
+    const node = dom.planets[p.id];
+    node.style.left = sp.x+'px'; node.style.top = sp.y+'px';
+    node.style.width = node.style.height = size+'px';
+
+    const label = dom.labels[p.id];
+    label.style.left = sp.x+'px';
+    label.style.top = (sp.y + size/2 + 10)+'px';
+
+    const ring = dom.rings[p.id];
+    ring.setAttribute('cx', sunScreen.x); ring.setAttribute('cy', sunScreen.y);
+    ring.setAttribute('rx', p.orbit*cam.scale); ring.setAttribute('ry', p.orbit*TILT*cam.scale);
+
+    if(isActive && dom.activeEdge){
+      dom.activeEdge.setAttribute('x1',sunScreen.x); dom.activeEdge.setAttribute('y1',sunScreen.y);
+      dom.activeEdge.setAttribute('x2',sp.x); dom.activeEdge.setAttribute('y2',sp.y);
+
+      const active = planets.find(x=>x.id===state.activeId);
+      active.children.forEach((label2,i)=>{
+        const mOrbit = 60 + i*26, mPeriod = 26+i*9, mAngle = state.t*(2*Math.PI/mPeriod)+i*2.1;
+        const mwx = wp.x + Math.cos(mAngle)*mOrbit, mwy = wp.y + Math.sin(mAngle)*mOrbit*0.6;
+        const msp = screenOf(mwx,mwy);
+        const m = dom.moons[label2+i];
+        if(!m) return;
+        m.node.style.left = msp.x+'px'; m.node.style.top = msp.y+'px';
+        m.node.style.width = m.node.style.height = (9*cam.scale)+'px';
+        m.label.style.left = (msp.x+12)+'px'; m.label.style.top = (msp.y-6)+'px';
+        m.edge.setAttribute('x1',sp.x); m.edge.setAttribute('y1',sp.y);
+        m.edge.setAttribute('x2',msp.x); m.edge.setAttribute('y2',msp.y);
+      });
+    }
+  });
+}
+
+function spawnPulse(x,y){
+  const p = document.createElement('div');
+  p.className='pulse'; p.style.left=x+'px'; p.style.top=y+'px';
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),850);
+}
+
+function selectPlanet(id){
+  const p = planets.find(x=>x.id===id);
+  const wp = worldPos(p, state.t);
+  const sp = screenOf(wp.x, wp.y);
+  spawnPulse(sp.x, sp.y);
+
+  state.expanded = true; state.activeId = id;
+  document.getElementById('app').classList.add('expanded');
+  setCamTarget();
+  buildDynamic();
+
+  document.getElementById('pTitle').textContent = p.label;
+  document.getElementById('pBlurb').textContent = p.blurb;
+  document.getElementById('pItems').innerHTML = p.children.map((c,i)=>
+    `<div class="item" onclick="openItem('${c.replace(/'/g,"")}')"><span>${String(i+1).padStart(2,'0')}</span>${c}</div>`).join('');
+}
+function openItem(label){
+  document.getElementById('pTitle').textContent = label;
+  document.getElementById('pBlurb').textContent = '[Placeholder — content for “'+label+'” goes here.]';
+}
+function collapse(){
+  state.expanded=false; state.activeId=null;
+  document.getElementById('app').classList.remove('expanded');
+  setCamTarget();
+  buildDynamic();
+}
+window.selectPlanet=selectPlanet; window.openItem=openItem; window.collapse=collapse;
+
+let last = performance.now();
+function loop(now){
+  const dt = (now-last)/1000; last = now;
+  state.t += dt;
+  cam.scale += (camTarget.scale-cam.scale)*0.08;
+  cam.focalX += (camTarget.focalX-cam.focalX)*0.08;
+  cam.focalY += (camTarget.focalY-cam.focalY)*0.08;
+  const targetP = state.expanded ? worldPos(planets.find(p=>p.id===state.activeId), state.t) : {x:0,y:0};
+  cam.px += (targetP.x-cam.px)*0.07;
+  cam.py += (targetP.y-cam.py)*0.07;
+  updateFrame();
+  requestAnimationFrame(loop);
+}
+
+function init(){
+  measure(); drawStars();
+  cam.px=0; cam.py=0; cam.focalX=cx; cam.focalY=cy;
+  buildStatic(); buildDynamic();
+  requestAnimationFrame(loop);
+}
+addEventListener('resize', ()=>{ measure(); drawStars(); });
+init();
+</script>
+</body>
+</html>
