@@ -39,7 +39,7 @@ canvas#stars{position:fixed;inset:0;z-index:0;}
   color:var(--paper-dim);text-transform:uppercase;z-index:5;
 }
 #tag{
-  position:fixed;bottom:26px;left:32px;
+  position:fixed;bottom:26px;right:32px;
   font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;
   color:rgba(135,144,160,0.6);z-index:5;
 }
@@ -60,7 +60,13 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
   cursor:pointer;transition:box-shadow .3s ease, opacity .5s ease, border-color .3s ease;
 }
 .sun{
-  background:radial-gradient(circle at 35% 30%, #F4DFA8, var(--brass) 60%, #9c7a3b 100%);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(244,223,168,0.4), rgba(156,122,59,0.15) 55%, rgba(0,0,0,0.4) 100%),
+    url('assets/chad-sun.jpg');
+  background-size:cover, cover;
+  background-position:center, center 25%;
+  background-blend-mode:overlay, normal;
+  background-color:var(--brass);
   box-shadow:0 0 50px rgba(217,174,104,0.45), 0 0 120px rgba(217,174,104,0.15);
 }
 .sun-label{
@@ -130,7 +136,7 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
 
 <div id="app">
   <div id="eyebrow">Chad Nislow</div>
-  <div id="tag">a universe, not a menu — size ≈ attention, speed ≈ distance from center</div>
+  <div id="tag">Chad Nislow - 2026 &copy;</div>
   <div id="breadcrumb" onclick="collapse()">✕ back to the whole system</div>
   <svg id="orbits"></svg>
   <div id="graph"></div>
