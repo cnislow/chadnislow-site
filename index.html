@@ -162,23 +162,24 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
    For now these are hand-set to demonstrate the feel. Periods are
    in seconds per full revolution — slow and ambient on purpose. */
 const planets = [
-  { id:'about', label:'About', size:34, orbit:130, period:260, angle0:0.4, hue:'periwinkle',
+  { id:'about', label:'About', size:40, orbit:220, period:260, angle0:0.4, hue:'periwinkle',
     blurb:'Who I am, beyond the résumé — the throughline connecting craft, travel, and work.',
     children:['Origin story','How I think','Right now'] },
-  { id:'professional', label:'Professional', size:44, orbit:210, period:340, angle0:2.6, hue:'coral',
+  { id:'professional', label:'Professional', size:52, orbit:340, period:340, angle0:2.6, hue:'coral',
     blurb:'Career history, skills, and a résumé — for anyone here to evaluate the work.',
     children:['Career timeline','Skills','Résumé ↓'] },
-  { id:'projects', label:'Projects', size:38, orbit:280, period:420, angle0:4.4, hue:'lavender',
+  { id:'projects', label:'Projects', size:45, orbit:455, period:420, angle0:4.4, hue:'lavender',
     blurb:'A portfolio of things built and made — the craft in practice.',
     children:['Project One','Project Two','Project Three'] },
-  { id:'travels', label:'Travels', size:46, orbit:350, period:500, angle0:1.1, hue:'mint',
+  { id:'travels', label:'Travels', size:54, orbit:565, period:500, angle0:1.1, hue:'mint',
     blurb:'Photos and notes from places I\u2019ve been — a visual travel log.',
     children:['Asia','Europe','Americas'] },
-  { id:'media', label:'Media', size:28, orbit:415, period:580, angle0:3.7, hue:'gold',
+  { id:'media', label:'Media', size:34, orbit:670, period:580, angle0:3.7, hue:'gold',
     blurb:'What I\u2019m consuming and recommending — books, film, shows, and favorites.',
     children:['Reading now','Recently watched','All-time favorites'] },
 ];
 const TILT = 0.52; // squashes circular orbits into a viewed-at-an-angle ellipse — kept mild so paths stay readable
+const SUN_SIZE = 180; // 3x the original 60px
 
 let W,H,cx,cy;
 let state = { expanded:false, activeId:null, t:0 };
@@ -242,7 +243,7 @@ function buildStatic(){
   graph.innerHTML=''; svg.innerHTML='';
   dom.planets={}; dom.rings={}; dom.labels={};
 
-  const sun = mkEl('div','body sun'); sun.style.width=sun.style.height='60px';
+  const sun = mkEl('div','body sun'); sun.style.width=sun.style.height=SUN_SIZE+'px';
   sun.onclick = ()=>{ if(state.expanded) collapse(); };
   const sl = mkEl('div','sun-label'); sl.textContent='WELCOME';
   sun.appendChild(sl);
@@ -303,7 +304,7 @@ function buildDynamic(){
 function updateFrame(){
   const sunScreen = screenOf(0,0);
   dom.sun.style.left = sunScreen.x+'px'; dom.sun.style.top = sunScreen.y+'px';
-  dom.sun.style.width = dom.sun.style.height = (60*cam.scale)+'px';
+  dom.sun.style.width = dom.sun.style.height = (SUN_SIZE*cam.scale)+'px';
 
   planets.forEach(p=>{
     const wp = worldPos(p, state.t);
