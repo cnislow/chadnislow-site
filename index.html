@@ -8,16 +8,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root{
-  --void:#080B14;
-  --panel:#10141F;
-  --line:rgba(180,196,210,0.4);
+  --void:#1E2740;
+  --panel:#232C42;
+  --line:rgba(200,212,240,0.32);
   --brass:#D9AE68;
   --coral:#E4694A;
-  --paper:#EDE6D6;
-  --paper-dim:#8790A0;
+  --paper:#EDE9DC;
+  --paper-dim:#AEB9DD;
 }
 *{box-sizing:border-box;}
-html,body{margin:0;height:100%;background:var(--void);overflow:hidden;font-family:'Inter',sans-serif;}
+html,body{margin:0;height:100%;background:radial-gradient(120% 100% at 70% 20%, #2E3A5C, var(--void) 75%);overflow:hidden;font-family:'Inter',sans-serif;}
 
 canvas#stars{position:fixed;inset:0;z-index:0;}
 .nebula{position:fixed;inset:0;z-index:0;pointer-events:none;
@@ -76,9 +76,14 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
   pointer-events:none;
 }
 .planet{
-  background:radial-gradient(circle at 32% 28%, #3a4258, #1c2130 70%);
-  border:1px solid rgba(180,196,210,0.65);
+  background:radial-gradient(circle at 32% 28%, #C7D2F5, #93A5E0 75%);
+  border:1px solid rgba(70,90,160,0.55);
 }
+.planet-coral{background:radial-gradient(circle at 32% 28%, #F7B8A6, #EA8266 75%);border:1px solid rgba(160,70,50,0.55);}
+.planet-mint{background:radial-gradient(circle at 32% 28%, #AEE0CB, #68B999 75%);border:1px solid rgba(40,100,75,0.55);}
+.planet-periwinkle{background:radial-gradient(circle at 32% 28%, #C7D2F5, #93A5E0 75%);border:1px solid rgba(70,90,160,0.55);}
+.planet-gold{background:radial-gradient(circle at 32% 28%, #F5DBA0, #E8B872 75%);border:1px solid rgba(150,105,40,0.55);}
+.planet-lavender{background:radial-gradient(circle at 32% 28%, #DCC9F2, #B79AE0 75%);border:1px solid rgba(100,70,150,0.55);}
 .planet:hover{box-shadow:0 0 26px rgba(217,174,104,0.35);}
 .planet.active{border-color:var(--coral);box-shadow:0 0 40px rgba(228,105,74,0.45);}
 .planet.dim{opacity:0.3;}
@@ -107,7 +112,7 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
 
 #panel{
   position:fixed;top:0;right:0;height:100%;width:min(420px,86vw);
-  background:rgba(16,20,31,0.92);backdrop-filter:blur(6px);
+  background:rgba(30,39,64,0.92);backdrop-filter:blur(6px);
   border-left:1px solid var(--line);
   transform:translateX(100%);transition:transform .7s cubic-bezier(.22,.9,.3,1);
   z-index:7;padding:64px 38px 40px;overflow-y:auto;
@@ -157,19 +162,19 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
    For now these are hand-set to demonstrate the feel. Periods are
    in seconds per full revolution — slow and ambient on purpose. */
 const planets = [
-  { id:'about', label:'About', size:34, orbit:130, period:260, angle0:0.4,
+  { id:'about', label:'About', size:34, orbit:130, period:260, angle0:0.4, hue:'coral',
     blurb:'Who I am, beyond the résumé — the throughline connecting craft, travel, and work.',
     children:['Origin story','How I think','Right now'] },
-  { id:'professional', label:'Professional', size:44, orbit:210, period:340, angle0:2.6,
+  { id:'professional', label:'Professional', size:44, orbit:210, period:340, angle0:2.6, hue:'mint',
     blurb:'Career history, skills, and a résumé — for anyone here to evaluate the work.',
     children:['Career timeline','Skills','Résumé ↓'] },
-  { id:'projects', label:'Projects', size:38, orbit:280, period:420, angle0:4.4,
+  { id:'projects', label:'Projects', size:38, orbit:280, period:420, angle0:4.4, hue:'periwinkle',
     blurb:'A portfolio of things built and made — the craft in practice.',
     children:['Project One','Project Two','Project Three'] },
-  { id:'travels', label:'Travels', size:46, orbit:350, period:500, angle0:1.1,
+  { id:'travels', label:'Travels', size:46, orbit:350, period:500, angle0:1.1, hue:'gold',
     blurb:'Photos and notes from places I\u2019ve been — a visual travel log.',
     children:['Asia','Europe','Americas'] },
-  { id:'media', label:'Media', size:28, orbit:415, period:580, angle0:3.7,
+  { id:'media', label:'Media', size:28, orbit:415, period:580, angle0:3.7, hue:'lavender',
     blurb:'What I\u2019m consuming and recommending — books, film, shows, and favorites.',
     children:['Reading now','Recently watched','All-time favorites'] },
 ];
@@ -248,7 +253,7 @@ function buildStatic(){
     const ring = mkSvg('ellipse','ring');
     svg.appendChild(ring); dom.rings[p.id]=ring;
 
-    const node = mkEl('div','body planet');
+    const node = mkEl('div','body planet planet-'+p.hue);
     node.style.width = node.style.height = p.size+'px';
     node.onclick = ()=> selectPlanet(p.id);
     graph.appendChild(node); dom.planets[p.id]=node;
