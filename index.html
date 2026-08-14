@@ -8,16 +8,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root{
-  --void:#080B14;
-  --panel:#10141F;
-  --line:rgba(180,196,210,0.4);
+  --void:#1E2740;
+  --panel:#232C42;
+  --line:rgba(200,212,240,0.32);
   --brass:#D9AE68;
   --coral:#E4694A;
-  --paper:#EDE6D6;
-  --paper-dim:#8790A0;
+  --paper:#EDE9DC;
+  --paper-dim:#AEB9DD;
 }
 *{box-sizing:border-box;}
-html,body{margin:0;height:100%;background:var(--void);overflow:hidden;font-family:'Inter',sans-serif;}
+html,body{margin:0;height:100%;background:radial-gradient(120% 100% at 70% 20%, #2E3A5C, var(--void) 75%);overflow:hidden;font-family:'Inter',sans-serif;}
 
 canvas#stars{position:fixed;inset:0;z-index:0;}
 .nebula{position:fixed;inset:0;z-index:0;pointer-events:none;
@@ -39,7 +39,7 @@ canvas#stars{position:fixed;inset:0;z-index:0;}
   color:var(--paper-dim);text-transform:uppercase;z-index:5;
 }
 #tag{
-  position:fixed;bottom:26px;left:32px;
+  position:fixed;bottom:26px;right:32px;
   font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;
   color:rgba(135,144,160,0.6);z-index:5;
 }
@@ -60,7 +60,13 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
   cursor:pointer;transition:box-shadow .3s ease, opacity .5s ease, border-color .3s ease;
 }
 .sun{
-  background:radial-gradient(circle at 35% 30%, #F4DFA8, var(--brass) 60%, #9c7a3b 100%);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(244,223,168,0.4), rgba(156,122,59,0.15) 55%, rgba(0,0,0,0.4) 100%),
+    url('assets/chad-sun.jpg');
+  background-size:cover, cover;
+  background-position:center, center 25%;
+  background-blend-mode:overlay, normal;
+  background-color:var(--brass);
   box-shadow:0 0 50px rgba(217,174,104,0.45), 0 0 120px rgba(217,174,104,0.15);
 }
 .sun-label{
@@ -70,9 +76,14 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
   pointer-events:none;
 }
 .planet{
-  background:radial-gradient(circle at 32% 28%, #3a4258, #1c2130 70%);
-  border:1px solid rgba(180,196,210,0.65);
+  background:radial-gradient(circle at 32% 28%, #C7D2F5, #93A5E0 75%);
+  border:1px solid rgba(70,90,160,0.55);
 }
+.planet-coral{background:radial-gradient(circle at 32% 28%, #F7B8A6, #EA8266 75%);border:1px solid rgba(160,70,50,0.55);}
+.planet-mint{background:radial-gradient(circle at 32% 28%, #AEE0CB, #68B999 75%);border:1px solid rgba(40,100,75,0.55);}
+.planet-periwinkle{background:radial-gradient(circle at 32% 28%, #C7D2F5, #93A5E0 75%);border:1px solid rgba(70,90,160,0.55);}
+.planet-gold{background:radial-gradient(circle at 32% 28%, #F5DBA0, #E8B872 75%);border:1px solid rgba(150,105,40,0.55);}
+.planet-lavender{background:radial-gradient(circle at 32% 28%, #DCC9F2, #B79AE0 75%);border:1px solid rgba(100,70,150,0.55);}
 .planet:hover{box-shadow:0 0 26px rgba(217,174,104,0.35);}
 .planet.active{border-color:var(--coral);box-shadow:0 0 40px rgba(228,105,74,0.45);}
 .planet.dim{opacity:0.3;}
@@ -101,7 +112,7 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
 
 #panel{
   position:fixed;top:0;right:0;height:100%;width:min(420px,86vw);
-  background:rgba(16,20,31,0.92);backdrop-filter:blur(6px);
+  background:rgba(30,39,64,0.92);backdrop-filter:blur(6px);
   border-left:1px solid var(--line);
   transform:translateX(100%);transition:transform .7s cubic-bezier(.22,.9,.3,1);
   z-index:7;padding:64px 38px 40px;overflow-y:auto;
@@ -130,7 +141,7 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
 
 <div id="app">
   <div id="eyebrow">Chad Nislow</div>
-  <div id="tag">a universe, not a menu — size ≈ attention, speed ≈ distance from center</div>
+  <div id="tag">Chad Nislow - 2026 &copy;</div>
   <div id="breadcrumb" onclick="collapse()">✕ back to the whole system</div>
   <svg id="orbits"></svg>
   <div id="graph"></div>
@@ -151,23 +162,24 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
    For now these are hand-set to demonstrate the feel. Periods are
    in seconds per full revolution — slow and ambient on purpose. */
 const planets = [
-  { id:'about', label:'About', size:34, orbit:130, period:260, angle0:0.4,
+  { id:'about', label:'About', size:40, orbit:220, period:260, angle0:0.4, hue:'periwinkle',
     blurb:'Who I am, beyond the résumé — the throughline connecting craft, travel, and work.',
     children:['Origin story','How I think','Right now'] },
-  { id:'professional', label:'Professional', size:44, orbit:210, period:340, angle0:2.6,
+  { id:'professional', label:'Professional', size:52, orbit:340, period:340, angle0:2.6, hue:'coral',
     blurb:'Career history, skills, and a résumé — for anyone here to evaluate the work.',
     children:['Career timeline','Skills','Résumé ↓'] },
-  { id:'projects', label:'Projects', size:38, orbit:280, period:420, angle0:4.4,
+  { id:'projects', label:'Projects', size:45, orbit:455, period:420, angle0:4.4, hue:'lavender',
     blurb:'A portfolio of things built and made — the craft in practice.',
     children:['Project One','Project Two','Project Three'] },
-  { id:'travels', label:'Travels', size:46, orbit:350, period:500, angle0:1.1,
+  { id:'travels', label:'Travels', size:54, orbit:565, period:500, angle0:1.1, hue:'mint',
     blurb:'Photos and notes from places I\u2019ve been — a visual travel log.',
     children:['Asia','Europe','Americas'] },
-  { id:'media', label:'Media', size:28, orbit:415, period:580, angle0:3.7,
+  { id:'media', label:'Media', size:34, orbit:670, period:580, angle0:3.7, hue:'gold',
     blurb:'What I\u2019m consuming and recommending — books, film, shows, and favorites.',
     children:['Reading now','Recently watched','All-time favorites'] },
 ];
-const TILT = 0.58; // squashes circular orbits into a viewed-at-an-angle ellipse — kept mild so paths stay readable
+const TILT = 0.52; // squashes circular orbits into a viewed-at-an-angle ellipse — kept mild so paths stay readable
+const SUN_SIZE = 180; // 3x the original 60px
 
 let W,H,cx,cy;
 let state = { expanded:false, activeId:null, t:0 };
@@ -231,9 +243,9 @@ function buildStatic(){
   graph.innerHTML=''; svg.innerHTML='';
   dom.planets={}; dom.rings={}; dom.labels={};
 
-  const sun = mkEl('div','body sun'); sun.style.width=sun.style.height='60px';
+  const sun = mkEl('div','body sun'); sun.style.width=sun.style.height=SUN_SIZE+'px';
   sun.onclick = ()=>{ if(state.expanded) collapse(); };
-  const sl = mkEl('div','sun-label'); sl.textContent='CHAD NISLOW';
+  const sl = mkEl('div','sun-label'); sl.textContent='WELCOME';
   sun.appendChild(sl);
   graph.appendChild(sun);
   dom.sun = sun;
@@ -242,7 +254,7 @@ function buildStatic(){
     const ring = mkSvg('ellipse','ring');
     svg.appendChild(ring); dom.rings[p.id]=ring;
 
-    const node = mkEl('div','body planet');
+    const node = mkEl('div','body planet planet-'+p.hue);
     node.style.width = node.style.height = p.size+'px';
     node.onclick = ()=> selectPlanet(p.id);
     graph.appendChild(node); dom.planets[p.id]=node;
@@ -292,7 +304,7 @@ function buildDynamic(){
 function updateFrame(){
   const sunScreen = screenOf(0,0);
   dom.sun.style.left = sunScreen.x+'px'; dom.sun.style.top = sunScreen.y+'px';
-  dom.sun.style.width = dom.sun.style.height = (60*cam.scale)+'px';
+  dom.sun.style.width = dom.sun.style.height = (SUN_SIZE*cam.scale)+'px';
 
   planets.forEach(p=>{
     const wp = worldPos(p, state.t);
