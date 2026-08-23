@@ -181,26 +181,71 @@ const planets = [
 const TILT = 0.52; // squashes circular orbits into a viewed-at-an-angle ellipse — kept mild so paths stay readable
 const SUN_SIZE = 180; // 3x the original 60px
 
+const MIN_PLANET_PX = 38;    // touch-target floor
+const MIN_FIT_SCALE = 0.18;  // safety floor for pathological viewports
+const CHROME_MARGIN_H = 20;  // edge padding, "full" axis
+const CHROME_MARGIN_V = 50;  // top/bottom room (eyebrow/tag)
+const LABEL_ALLOWANCE = 28;  // extra room for label text past the farthest planet
+
 let W,H,cx,cy;
 let state = { expanded:false, activeId:null, t:0 };
 let cam = { scale:1, focalX:0, focalY:0, px:0, py:0 };
 let camTarget = { scale:1, focalX:0, focalY:0 };
+// scale + orbit orientation, recomputed on every measure() so the whole
+// system fits the viewport — portrait screens get a tall ellipse (tiltX<1),
+// landscape/desktop get the original wide ellipse (tiltY<1)
+let fit = { scale:1, tiltX:1, tiltY:TILT };
 
 // persistent DOM references, built once (or rebuilt only when the
 // expanded/active set changes) — never destroyed on every animation frame,
 // so click handlers stay attached and reliable.
 const dom = { planets:{}, rings:{}, labels:{}, moons:{}, activeEdge:null };
 
-function measure(){ W=innerWidth; H=innerHeight; cx=W/2; cy=H/2; setCamTarget(); }
+function measure(){ W=innerWidth; H=innerHeight; cx=W/2; cy=H/2; computeFit(); setCamTarget(); }
+
+function computeFit(){
+  const portrait = H > W;
+  const tiltX = portrait ? TILT : 1;
+  const tiltY = portrait ? 1 : TILT;
+
+  // the planet with the largest true extent — orbit dominates size
+  // differences, so this reduce is exact regardless of tilt
+  const worst = planets.reduce((a,b)=> (b.orbit+b.size/2 > a.orbit+a.size/2) ? b : a);
+
+  const availW = Math.max(0, W/2 - CHROME_MARGIN_H);
+  const availH = Math.max(0, H/2 - CHROME_MARGIN_V);
+  const reqX = worst.orbit*tiltX + worst.size/2;
+  const reqY = worst.orbit*tiltY + worst.size/2 + LABEL_ALLOWANCE;
+
+  const scale = Math.max(Math.min(availW/reqX, availH/reqY, 1), MIN_FIT_SCALE);
+  fit = { scale, tiltX, tiltY };
+}
+
+// NOTE: panelWidthPx() mirrors the #panel CSS width rules (lines ~114, ~135)
+// — keep them in sync if those change.
+function panelWidthPx(){ return W <= 640 ? W : Math.min(420, W*0.86); }
 
 function setCamTarget(){
   if(!state.expanded){ camTarget = { scale:1, focalX:cx, focalY:cy }; }
-  else { camTarget = { scale:2.0, focalX:W*0.30, focalY:H*0.5 }; }
+  else {
+    const pw = panelWidthPx();
+    const visibleW = Math.max(0, W - pw);
+    const focalX = visibleW > 60 ? visibleW/2 : W*0.5;
+    camTarget = { scale:2.0, focalX, focalY:H*0.5 };
+  }
 }
+
+function effOrbit(p){ return p.orbit*fit.scale; }
+function effSize(p, isActive){
+  const raw = (isActive ? p.size*1.25 : p.size) * fit.scale;
+  return Math.max(raw, MIN_PLANET_PX);
+}
+function effSunSize(){ return SUN_SIZE*fit.scale; }
 
 function worldPos(p, t){
   const a = p.angle0 + (2*Math.PI/p.period)*t;
-  return { x: Math.cos(a)*p.orbit, y: Math.sin(a)*p.orbit*TILT };
+  const r = effOrbit(p);
+  return { x: Math.cos(a)*r*fit.tiltX, y: Math.sin(a)*r*fit.tiltY };
 }
 function screenOf(wx,wy){
   return { x: cam.focalX + (wx-cam.px)*cam.scale, y: cam.focalY + (wy-cam.py)*cam.scale };
@@ -237,13 +282,24 @@ document.head.appendChild(styleTag);
 function mkEl(tag,cls){ const e=document.createElement(tag); e.className=cls; return e; }
 function mkSvg(tag,cls){ const e=document.createElementNS('http://www.w3.org/2000/svg',tag); if(cls) e.setAttribute('class',cls); return e; }
 
+function applyLabelScale(){
+  const BASE_PLANET_FONT = 11, BASE_PLANET_FONT_ACTIVE = 12, BASE_SUN_FONT = 13;
+  const MIN_FONT_FACTOR = 0.75; // never shrink labels below 75% of base size
+  const f = Math.max(fit.scale, MIN_FONT_FACTOR);
+  Object.values(dom.labels).forEach(l=>{
+    l.style.fontSize = (l.classList.contains('active') ? BASE_PLANET_FONT_ACTIVE*f : BASE_PLANET_FONT*f)+'px';
+  });
+  const sl = dom.sun && dom.sun.querySelector('.sun-label');
+  if(sl) sl.style.fontSize = (BASE_SUN_FONT*f)+'px';
+}
+
 function buildStatic(){
   const graph = document.getElementById('graph');
   const svg = document.getElementById('orbits');
   graph.innerHTML=''; svg.innerHTML='';
   dom.planets={}; dom.rings={}; dom.labels={};
 
-  const sun = mkEl('div','body sun'); sun.style.width=sun.style.height=SUN_SIZE+'px';
+  const sun = mkEl('div','body sun'); sun.style.width=sun.style.height=effSunSize()+'px';
   sun.onclick = ()=>{ if(state.expanded) collapse(); };
   const sl = mkEl('div','sun-label'); sl.textContent='WELCOME';
   sun.appendChild(sl);
@@ -255,7 +311,7 @@ function buildStatic(){
     svg.appendChild(ring); dom.rings[p.id]=ring;
 
     const node = mkEl('div','body planet planet-'+p.hue);
-    node.style.width = node.style.height = p.size+'px';
+    node.style.width = node.style.height = effSize(p,false)+'px';
     node.onclick = ()=> selectPlanet(p.id);
     graph.appendChild(node); dom.planets[p.id]=node;
 
@@ -282,6 +338,8 @@ function buildDynamic(){
     dom.rings[p.id].style.opacity = (state.expanded && !isActive) ? '0.12' : '0.55';
   });
 
+  applyLabelScale();
+
   if(!state.expanded) return;
 
   dom.activeEdge = mkSvg('line','edge');
@@ -304,13 +362,13 @@ function buildDynamic(){
 function updateFrame(){
   const sunScreen = screenOf(0,0);
   dom.sun.style.left = sunScreen.x+'px'; dom.sun.style.top = sunScreen.y+'px';
-  dom.sun.style.width = dom.sun.style.height = (SUN_SIZE*cam.scale)+'px';
+  dom.sun.style.width = dom.sun.style.height = (effSunSize()*cam.scale)+'px';
 
   planets.forEach(p=>{
     const wp = worldPos(p, state.t);
     const sp = screenOf(wp.x, wp.y);
     const isActive = state.activeId===p.id;
-    const size = (isActive ? p.size*1.25 : p.size) * cam.scale;
+    const size = effSize(p, isActive) * cam.scale;
 
     const node = dom.planets[p.id];
     node.style.left = sp.x+'px'; node.style.top = sp.y+'px';
@@ -322,7 +380,7 @@ function updateFrame(){
 
     const ring = dom.rings[p.id];
     ring.setAttribute('cx', sunScreen.x); ring.setAttribute('cy', sunScreen.y);
-    ring.setAttribute('rx', p.orbit*cam.scale); ring.setAttribute('ry', p.orbit*TILT*cam.scale);
+    ring.setAttribute('rx', effOrbit(p)*fit.tiltX*cam.scale); ring.setAttribute('ry', effOrbit(p)*fit.tiltY*cam.scale);
 
     if(isActive && dom.activeEdge){
       dom.activeEdge.setAttribute('x1',sunScreen.x); dom.activeEdge.setAttribute('y1',sunScreen.y);
@@ -331,7 +389,7 @@ function updateFrame(){
       const active = planets.find(x=>x.id===state.activeId);
       active.children.forEach((label2,i)=>{
         const mOrbit = 60 + i*26, mPeriod = 26+i*9, mAngle = state.t*(2*Math.PI/mPeriod)+i*2.1;
-        const mwx = wp.x + Math.cos(mAngle)*mOrbit, mwy = wp.y + Math.sin(mAngle)*mOrbit*0.6;
+        const mwx = wp.x + Math.cos(mAngle)*mOrbit*fit.tiltX, mwy = wp.y + Math.sin(mAngle)*mOrbit*fit.tiltY;
         const msp = screenOf(mwx,mwy);
         const m = dom.moons[label2+i];
         if(!m) return;
@@ -400,7 +458,7 @@ function init(){
   buildStatic(); buildDynamic();
   requestAnimationFrame(loop);
 }
-addEventListener('resize', ()=>{ measure(); drawStars(); });
+addEventListener('resize', ()=>{ measure(); drawStars(); applyLabelScale(); });
 init();
 </script>
 </body>
