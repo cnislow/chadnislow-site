@@ -603,7 +603,14 @@ const pageCache = new Map();
 async function fetchText(url){
   const res = await fetch(url, { cache:'no-store' });
   if(!res.ok) throw new Error('not found: '+url);
-  return res.text();
+  const text = await res.text();
+  // vercel.json's catch-all SPA rewrite can't exclude content/ by pattern
+  // (Vercel's route matcher rejects lookahead regex), so a missing fragment
+  // comes back as a 200 containing this whole document instead of a real
+  // 404 — treat that the same as not-found so the resolver still falls
+  // through instead of rendering the homepage inside the overlay
+  if(/<!doctype html/i.test(text) || /<html[\s>]/i.test(text)) throw new Error('not found (app shell): '+url);
+  return text;
 }
 async function loadFragment(planetId, slug){
   const perHeadingUrl = `content/${planetId}/${slug}.html`;
