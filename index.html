@@ -56,13 +56,6 @@ canvas#stars{position:fixed;inset:0;z-index:0;}
   font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;
   color:rgba(135,144,160,0.6);z-index:5;
 }
-#breadcrumb{
-  position:fixed;top:28px;right:32px;
-  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper-dim);
-  z-index:6;opacity:0;transition:opacity .5s ease;cursor:pointer;
-}
-#app.expanded #breadcrumb{opacity:1;}
-
 svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;}
 .ring{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:1 4;transition:opacity .5s ease, stroke .4s ease;}
 .edge{stroke:rgba(217,174,104,0.55);stroke-width:1.2;stroke-dasharray:2 5;}
@@ -107,12 +100,6 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
   transform:translateX(-50%);
 }
 .planet-label.active{color:var(--brass);font-size:12px;}
-.moon{background:#20263a;border:1px solid rgba(228,105,74,0.6);}
-.moon-label{
-  position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
-  color:var(--paper-dim);white-space:nowrap;pointer-events:none;transition:color .2s ease;
-}
-
 .pulse{
   position:fixed;border-radius:50%;border:1.5px solid var(--coral);
   transform:translate(-50%,-50%);pointer-events:none;z-index:3;
@@ -122,30 +109,6 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
   0%{width:10px;height:10px;opacity:.9;}
   100%{width:140px;height:140px;opacity:0;}
 }
-
-#panel{
-  position:fixed;top:0;right:0;height:100%;width:min(420px,86vw);
-  background:rgba(30,39,64,0.92);backdrop-filter:blur(6px);
-  border-left:1px solid var(--line);
-  transform:translateX(100%);transition:transform .7s cubic-bezier(.22,.9,.3,1);
-  z-index:7;padding:64px 38px 40px;overflow-y:auto;
-}
-#app.expanded #panel{transform:translateX(0);}
-#panel .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--brass);text-transform:uppercase;}
-#panel h2{font-family:'Fraunces',serif;font-weight:600;color:var(--paper);font-size:30px;margin:10px 0 16px;}
-#panel p{color:#b8bfce;line-height:1.65;font-size:14.5px;}
-#panel .items{margin-top:24px;}
-#panel .item{
-  padding:15px 0;border-top:1px solid var(--line);
-  color:var(--paper-dim);font-size:13.5px;display:flex;justify-content:space-between;
-  cursor:pointer;transition:color .2s ease;
-}
-#panel .item:hover{color:var(--paper);}
-#panel .item span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--brass);}
-#panel .close{position:absolute;top:26px;right:32px;color:var(--paper-dim);cursor:pointer;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;}
-#panel .close:hover{color:var(--paper);}
-@media (max-width:640px){#panel{width:100vw;padding:56px 22px 30px;} #panel h2{font-size:24px;}}
 
 #page{
   position:fixed;inset:0;z-index:20;
@@ -189,6 +152,8 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
 #pageBody a{color:var(--brass);}
 #pageBody img{max-width:100%;border-radius:6px;margin:16px 0;}
 #pageBody section + section{margin-top:48px;padding-top:48px;border-top:1px solid var(--line);}
+/* keeps a heading from landing under the sticky #pageChrome bar when scrollIntoView jumps to it */
+#pageBody section{scroll-margin-top:96px;}
 .page-status{color:var(--paper-dim);font-family:'IBM Plex Mono',monospace;font-size:13px;}
 
 .timeline{list-style:none;margin:0;padding:0;}
@@ -227,17 +192,8 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
 <div id="app">
   <div id="eyebrow">Chad Nislow</div>
   <div id="tag">Chad Nislow - 2026 &copy;</div>
-  <div id="breadcrumb" onclick="navigateTo(null)">✕ back to the whole system</div>
   <svg id="orbits"></svg>
   <div id="graph"></div>
-
-  <div id="panel">
-    <div class="close" onclick="navigateTo(null)">✕ CLOSE</div>
-    <div class="eyebrow" id="pEyebrow">Section</div>
-    <h2 id="pTitle"></h2>
-    <p id="pBlurb"></p>
-    <div class="items" id="pItems"></div>
-  </div>
 
   <div id="page" aria-hidden="true">
     <header id="pageChrome">
@@ -316,7 +272,7 @@ let fit = { scale:1, tiltX:1, tiltY:TILT };
 // persistent DOM references, built once (or rebuilt only when the
 // expanded/active set changes) — never destroyed on every animation frame,
 // so click handlers stay attached and reliable.
-const dom = { planets:{}, rings:{}, labels:{}, moons:{}, activeEdge:null };
+const dom = { planets:{}, rings:{}, labels:{}, activeEdge:null };
 
 function measure(){ W=innerWidth; H=innerHeight; cx=W/2; cy=H/2; computeFit(); setCamTarget(); }
 
@@ -338,18 +294,10 @@ function computeFit(){
   fit = { scale, tiltX, tiltY };
 }
 
-// NOTE: panelWidthPx() mirrors the #panel CSS width rules (lines ~114, ~135)
-// — keep them in sync if those change.
-function panelWidthPx(){ return W <= 640 ? W : Math.min(420, W*0.86); }
-
 function setCamTarget(){
-  if(!state.expanded){ camTarget = { scale:1, focalX:cx, focalY:cy }; }
-  else {
-    const pw = panelWidthPx();
-    const visibleW = Math.max(0, W - pw);
-    const focalX = visibleW > 60 ? visibleW/2 : W*0.5;
-    camTarget = { scale:2.0, focalX, focalY:H*0.5 };
-  }
+  camTarget = state.expanded
+    ? { scale:2.0, focalX:cx, focalY:cy }
+    : { scale:1, focalX:cx, focalY:cy };
 }
 
 function effOrbit(p){ return p.orbit*fit.scale; }
@@ -439,12 +387,9 @@ function buildStatic(){
 }
 
 function buildDynamic(){
-  // rebuild only the moon layer — happens rarely (on select/collapse), not every frame
-  Object.values(dom.moons).forEach(m=>{ m.node.remove(); m.label.remove(); m.edge.remove(); });
-  dom.moons = {};
+  // toggles the active/dim visual state — happens rarely (on open/close), not every frame
   if(dom.activeEdge){ dom.activeEdge.remove(); dom.activeEdge=null; }
   const svg = document.getElementById('orbits');
-  const graph = document.getElementById('graph');
 
   planets.forEach(p=>{
     const isActive = state.activeId===p.id;
@@ -461,19 +406,6 @@ function buildDynamic(){
 
   dom.activeEdge = mkSvg('line','edge');
   svg.appendChild(dom.activeEdge);
-
-  const active = planets.find(p=>p.id===state.activeId);
-  active.children.forEach((c,i)=>{
-    const node = mkEl('div','body moon');
-    node.style.width = node.style.height = '9px';
-    node.onclick = ()=> { if(c.href){ window.open(c.href,'_blank','noopener'); return; } navigateTo(active.id, c.slug); };
-    graph.appendChild(node);
-    const lab = mkEl('div','moon-label'); lab.textContent = c.label;
-    graph.appendChild(lab);
-    const edge = mkSvg('line','edge'); edge.setAttribute('opacity','0.35');
-    svg.appendChild(edge);
-    dom.moons[c.slug] = { node, label:lab, edge, i };
-  });
 }
 
 function updateFrame(){
@@ -502,20 +434,6 @@ function updateFrame(){
     if(isActive && dom.activeEdge){
       dom.activeEdge.setAttribute('x1',sunScreen.x); dom.activeEdge.setAttribute('y1',sunScreen.y);
       dom.activeEdge.setAttribute('x2',sp.x); dom.activeEdge.setAttribute('y2',sp.y);
-
-      const active = planets.find(x=>x.id===state.activeId);
-      active.children.forEach((c,i)=>{
-        const mOrbit = 60 + i*26, mPeriod = 26+i*9, mAngle = state.t*(2*Math.PI/mPeriod)+i*2.1;
-        const mwx = wp.x + Math.cos(mAngle)*mOrbit*fit.tiltX, mwy = wp.y + Math.sin(mAngle)*mOrbit*fit.tiltY;
-        const msp = screenOf(mwx,mwy);
-        const m = dom.moons[c.slug];
-        if(!m) return;
-        m.node.style.left = msp.x+'px'; m.node.style.top = msp.y+'px';
-        m.node.style.width = m.node.style.height = (9*cam.scale)+'px';
-        m.label.style.left = (msp.x+12)+'px'; m.label.style.top = (msp.y-6)+'px';
-        m.edge.setAttribute('x1',sp.x); m.edge.setAttribute('y1',sp.y);
-        m.edge.setAttribute('x2',msp.x); m.edge.setAttribute('y2',msp.y);
-      });
     }
   });
 }
@@ -527,45 +445,9 @@ function spawnPulse(x,y){
   setTimeout(()=>p.remove(),850);
 }
 
-function renderItems(p){
-  const wrap = document.getElementById('pItems');
-  wrap.innerHTML = '';
-  p.children.forEach((c,i)=>{
-    const item = mkEl('div','item');
-    const idx = document.createElement('span');
-    idx.textContent = String(i+1).padStart(2,'0');
-    item.appendChild(idx);
-    item.appendChild(document.createTextNode(c.label));
-    item.onclick = c.href
-      ? ()=> window.open(c.href,'_blank','noopener')
-      : ()=> navigateTo(p.id, c.slug);
-    wrap.appendChild(item);
-  });
-}
-
-function selectPlanet(id){
-  const p = planets.find(x=>x.id===id);
-  if(!p) return;
-  hidePageOverlay();
-
-  const wp = worldPos(p, state.t);
-  const sp = screenOf(wp.x, wp.y);
-  spawnPulse(sp.x, sp.y);
-
-  state.expanded = true; state.activeId = id;
-  document.getElementById('app').classList.add('expanded');
-  setCamTarget();
-  buildDynamic();
-
-  document.getElementById('pTitle').textContent = p.label;
-  document.getElementById('pBlurb').textContent = p.blurb;
-  renderItems(p);
-}
-
 function collapse(){
   hidePageOverlay();
   state.expanded=false; state.activeId=null;
-  document.getElementById('app').classList.remove('expanded');
   setCamTarget();
   buildDynamic();
 }
@@ -587,12 +469,16 @@ function hidePageOverlay(){
 function renderPageNav(p, activeSlug){
   const nav = document.getElementById('pageNav');
   nav.innerHTML = '';
-  p.children.filter(c=>!c.href).forEach(c=>{
+  p.children.forEach(c=>{
     const a = document.createElement('a');
-    a.href = pathFor(p.id, c.slug);
     a.className = 'page-nav-link' + (c.slug===activeSlug ? ' active' : '');
     a.textContent = c.label;
-    a.onclick = (e)=>{ e.preventDefault(); navigateTo(p.id, c.slug); };
+    if(c.href){
+      a.href = c.href; a.target = '_blank'; a.rel = 'noopener';
+    } else {
+      a.href = pathFor(p.id, c.slug);
+      a.onclick = (e)=>{ e.preventDefault(); navigateTo(p.id, c.slug); };
+    }
     nav.appendChild(a);
   });
 }
@@ -613,28 +499,40 @@ async function fetchText(url){
   return text;
 }
 async function loadFragment(planetId, slug){
-  const perHeadingUrl = `content/${planetId}/${slug}.html`;
   const wholeUrl = `content/${planetId}.html`;
-  if(pageCache.has(perHeadingUrl)) return pageCache.get(perHeadingUrl);
-  if(pageCache.has(wholeUrl)) return pageCache.get(wholeUrl);
-  try {
-    const html = await fetchText(perHeadingUrl);
-    pageCache.set(perHeadingUrl, html);
-    return html;
-  } catch(e){
-    const html = await fetchText(wholeUrl);
-    pageCache.set(wholeUrl, html);
-    return html;
+  if(slug){
+    const perHeadingUrl = `content/${planetId}/${slug}.html`;
+    if(pageCache.has(perHeadingUrl)) return pageCache.get(perHeadingUrl);
+    if(!pageCache.has(wholeUrl)){
+      try {
+        const html = await fetchText(perHeadingUrl);
+        pageCache.set(perHeadingUrl, html);
+        return html;
+      } catch(e){ /* no per-heading file yet — fall through to the whole-planet file */ }
+    }
   }
+  if(pageCache.has(wholeUrl)) return pageCache.get(wholeUrl);
+  const html = await fetchText(wholeUrl);
+  pageCache.set(wholeUrl, html);
+  return html;
 }
 
+// clicking a planet zooms the camera onto it and opens its reading overlay in one
+// step — there's no separate "zoomed but browsing headings" screen anymore. A slug
+// scrolls straight to that heading; without one the overlay opens at the top.
 let pageRequestId = 0;
-async function openPage(planetId, slug){
-  const p = planets.find(x=>x.id===planetId);
-  const child = p && p.children.find(c=>c.slug===slug && !c.href);
-  if(!p || !child){ navigateTo(planetId || null); return; }
+function openPlanet(id, slug){
+  const p = planets.find(x=>x.id===id);
+  if(!p){ navigateTo(null); return; }
 
-  if(state.activeId !== planetId || !state.expanded) selectPlanet(planetId);
+  if(state.activeId !== id || !state.expanded){
+    const wp = worldPos(p, state.t);
+    const sp = screenOf(wp.x, wp.y);
+    spawnPulse(sp.x, sp.y);
+    state.expanded = true; state.activeId = id;
+    setCamTarget();
+    buildDynamic();
+  }
 
   showPageOverlay();
   document.getElementById('pageEyebrow').textContent = p.label;
@@ -643,11 +541,10 @@ async function openPage(planetId, slug){
   const reqId = ++pageRequestId;
   const bodyEl = document.getElementById('pageBody');
   bodyEl.innerHTML = '<p class="page-status">Loading…</p>';
-  try {
-    const html = await loadFragment(planetId, slug);
+  loadFragment(id, slug).then(html => {
     if(reqId !== pageRequestId) return; // superseded by a newer navigation
     bodyEl.innerHTML = html;
-    const heading = document.getElementById(slug);
+    const heading = slug && document.getElementById(slug);
     if(heading){
       heading.setAttribute('tabindex','-1');
       heading.scrollIntoView({ block:'start' });
@@ -655,15 +552,15 @@ async function openPage(planetId, slug){
     } else {
       bodyEl.scrollTop = 0;
     }
-  } catch(err){
+  }).catch(err => {
     if(reqId !== pageRequestId) return;
     bodyEl.innerHTML = '<p class="page-status">Couldn’t load this page. Try refreshing, or use ✕ back.</p>';
-  }
+  });
 }
 
 function closePage(){
   if(!document.getElementById('page').classList.contains('open')) return;
-  navigateTo(state.activeId);
+  navigateTo(null);
 }
 
 function pathFor(planetId, slug){
@@ -684,18 +581,15 @@ function applyPath(){
     collapse();
     return;
   }
-  if(slug){
-    const child = p.children.find(c=>c.slug===slug && !c.href);
-    if(child){ openPage(p.id, slug); return; }
-    history.replaceState(null,'',pathFor(p.id)); // unknown slug or a link-only child — normalize
-  }
-  selectPlanet(p.id);
+  const child = slug && p.children.find(c=>c.slug===slug && !c.href);
+  if(slug && !child) history.replaceState(null,'',pathFor(p.id)); // unknown slug or a link-only child — normalize
+  openPlanet(p.id, child ? slug : undefined);
 }
 addEventListener('popstate', applyPath);
 addEventListener('keydown', (e)=>{
   if(e.key==='Escape' && document.getElementById('page').classList.contains('open')) closePage();
 });
-window.navigateTo=navigateTo; window.closePage=closePage;
+window.closePage=closePage;
 
 let last = performance.now();
 function loop(now){
