@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<!-- pins relative URLs (fetch(), the sun's background image, assets/resume.pdf) to
+     the site root regardless of the current client-side route's pathname -->
+<base href="/">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta property="og:type" content="website">
 <meta property="og:title" content="Chad Nislow's Universe">
@@ -53,13 +56,6 @@ canvas#stars{position:fixed;inset:0;z-index:0;}
   font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;
   color:rgba(135,144,160,0.6);z-index:5;
 }
-#breadcrumb{
-  position:fixed;top:28px;right:32px;
-  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper-dim);
-  z-index:6;opacity:0;transition:opacity .5s ease;cursor:pointer;
-}
-#app.expanded #breadcrumb{opacity:1;}
-
 svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;}
 .ring{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:1 4;transition:opacity .5s ease, stroke .4s ease;}
 .edge{stroke:rgba(217,174,104,0.55);stroke-width:1.2;stroke-dasharray:2 5;}
@@ -104,12 +100,6 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
   transform:translateX(-50%);
 }
 .planet-label.active{color:var(--brass);font-size:12px;}
-.moon{background:#20263a;border:1px solid rgba(228,105,74,0.6);}
-.moon-label{
-  position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
-  color:var(--paper-dim);white-space:nowrap;pointer-events:none;transition:color .2s ease;
-}
-
 .pulse{
   position:fixed;border-radius:50%;border:1.5px solid var(--coral);
   transform:translate(-50%,-50%);pointer-events:none;z-index:3;
@@ -120,29 +110,79 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
   100%{width:140px;height:140px;opacity:0;}
 }
 
-#panel{
-  position:fixed;top:0;right:0;height:100%;width:min(420px,86vw);
-  background:rgba(30,39,64,0.92);backdrop-filter:blur(6px);
-  border-left:1px solid var(--line);
-  transform:translateX(100%);transition:transform .7s cubic-bezier(.22,.9,.3,1);
-  z-index:7;padding:64px 38px 40px;overflow-y:auto;
+#page{
+  position:fixed;inset:0;z-index:20;
+  background:rgba(20,26,42,0.98);
+  opacity:0;transform:translateY(12px);pointer-events:none;
+  transition:opacity .7s cubic-bezier(.22,.9,.3,1), transform .7s cubic-bezier(.22,.9,.3,1);
+  overflow-y:auto;
 }
-#app.expanded #panel{transform:translateX(0);}
-#panel .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--brass);text-transform:uppercase;}
-#panel h2{font-family:'Fraunces',serif;font-weight:600;color:var(--paper);font-size:30px;margin:10px 0 16px;}
-#panel p{color:#b8bfce;line-height:1.65;font-size:14.5px;}
-#panel .items{margin-top:24px;}
-#panel .item{
-  padding:15px 0;border-top:1px solid var(--line);
-  color:var(--paper-dim);font-size:13.5px;display:flex;justify-content:space-between;
-  cursor:pointer;transition:color .2s ease;
+#page.open{opacity:1;transform:translateY(0);pointer-events:auto;}
+#pageChrome{
+  position:sticky;top:0;z-index:1;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:26px 40px;background:rgba(20,26,42,0.98);
+  border-bottom:1px solid var(--line);
 }
-#panel .item:hover{color:var(--paper);}
-#panel .item span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--brass);}
-#panel .close{position:absolute;top:26px;right:32px;color:var(--paper-dim);cursor:pointer;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;}
-#panel .close:hover{color:var(--paper);}
-@media (max-width:640px){#panel{width:100vw;padding:56px 22px 30px;} #panel h2{font-size:24px;}}
+.page-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--brass);text-transform:uppercase;}
+.page-close{
+  background:none;border:none;cursor:pointer;color:var(--paper-dim);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;padding:6px 10px;
+}
+.page-close:hover{color:var(--paper);}
+#pageLayout{display:flex;align-items:flex-start;justify-content:center;gap:40px;padding:0 24px;}
+#pageNav{
+  position:sticky;top:96px;flex:0 0 180px;
+  display:flex;flex-direction:column;gap:2px;padding-top:48px;
+}
+.page-nav-link{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper-dim);
+  text-decoration:none;padding:8px 0 8px 12px;border-left:2px solid transparent;
+  transition:color .2s ease, border-color .2s ease;
+}
+.page-nav-link:hover{color:var(--paper);}
+.page-nav-link.active{color:var(--brass);border-left-color:var(--brass);}
+#pageBody{
+  flex:1 1 720px;max-width:720px;color:#b8bfce;
+  padding:48px 0 80px;padding-bottom:calc(80px + env(safe-area-inset-bottom));
+}
+#pageBody h2{font-family:'Fraunces',serif;font-weight:600;color:var(--paper);font-size:30px;margin:0 0 20px;}
+#pageBody h3{font-family:'Fraunces',serif;font-weight:600;color:var(--paper);font-size:18px;margin:28px 0 10px;}
+#pageBody p{line-height:1.7;font-size:15px;margin:0 0 14px;}
+#pageBody a{color:var(--brass);}
+#pageBody img{max-width:100%;border-radius:6px;margin:16px 0;}
+#pageBody section + section{margin-top:48px;padding-top:48px;border-top:1px solid var(--line);}
+/* keeps a heading from landing under the sticky #pageChrome bar when scrollIntoView jumps to it */
+#pageBody section{scroll-margin-top:96px;}
+.page-status{color:var(--paper-dim);font-family:'IBM Plex Mono',monospace;font-size:13px;}
+
+.timeline{list-style:none;margin:0;padding:0;}
+.timeline li{display:grid;grid-template-columns:140px 1fr;gap:24px;padding:20px 0;border-top:1px solid var(--line);}
+.timeline li:first-child{border-top:none;padding-top:0;}
+.timeline .when{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--brass);}
+.timeline .what h3{margin-top:0;}
+.timeline .org{color:var(--paper-dim);font-weight:400;font-size:14px;}
+
+.pill-group{margin-bottom:24px;}
+.pills{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:8px 0 0;padding:0;}
+.pills li{
+  border:1px solid var(--line);padding:5px 12px;border-radius:999px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper-dim);
+}
+
+@media (max-width:640px){
+  #pageChrome{padding:20px 22px;}
+  #pageLayout{flex-direction:column;gap:0;padding:0;}
+  #pageNav{
+    position:static;flex-direction:row;width:100%;flex:none;
+    overflow-x:auto;gap:14px;padding:16px 22px;border-bottom:1px solid var(--line);
+  }
+  .page-nav-link{padding:4px 0;border-left:none;border-bottom:2px solid transparent;white-space:nowrap;}
+  .page-nav-link.active{border-left-color:transparent;border-bottom-color:var(--brass);}
+  #pageBody{max-width:none;padding:28px 22px 60px;padding-bottom:calc(60px + env(safe-area-inset-bottom));}
+  #pageBody h2{font-size:24px;}
+  .timeline li{grid-template-columns:1fr;gap:6px;}
+}
 </style>
 </head>
 <body>
@@ -152,16 +192,18 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
 <div id="app">
   <div id="eyebrow">Chad Nislow</div>
   <div id="tag">Chad Nislow - 2026 &copy;</div>
-  <div id="breadcrumb" onclick="collapse()">✕ back to the whole system</div>
   <svg id="orbits"></svg>
   <div id="graph"></div>
 
-  <div id="panel">
-    <div class="close" onclick="collapse()">✕ CLOSE</div>
-    <div class="eyebrow" id="pEyebrow">Section</div>
-    <h2 id="pTitle"></h2>
-    <p id="pBlurb"></p>
-    <div class="items" id="pItems"></div>
+  <div id="page" aria-hidden="true">
+    <header id="pageChrome">
+      <div class="page-eyebrow" id="pageEyebrow"></div>
+      <button class="page-close" onclick="closePage()">✕ back</button>
+    </header>
+    <div id="pageLayout">
+      <nav id="pageNav"></nav>
+      <article id="pageBody"></article>
+    </div>
   </div>
 </div>
 
@@ -174,22 +216,43 @@ svg#orbits{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-event
 const planets = [
   { id:'about', label:'About', size:40, orbit:220, period:260, angle0:0.4, hue:'periwinkle',
     blurb:'Who I am, beyond the résumé — the throughline connecting craft, travel, and work.',
-    children:['Origin story','How I think','Right now'] },
+    children:[
+      { label:'About Me', slug:'about-me' },
+      { label:'My Personal Philosopy', slug:'philosophy' },
+    ] },
   { id:'professional', label:'Professional', size:52, orbit:340, period:340, angle0:2.6, hue:'coral',
     blurb:'Career history, skills, and a résumé — for anyone here to evaluate the work.',
-    children:['Career timeline','Skills','Résumé ↓'] },
+    children:[
+      { label:'Career timeline', slug:'career-timeline' },
+      { label:'Skills', slug:'skills' },
+      //{ label:'Résumé ↓', slug:'resume', href:'assets/resume.pdf' },
+    ] },
   { id:'projects', label:'Projects', size:45, orbit:455, period:420, angle0:4.4, hue:'lavender',
     blurb:'A portfolio of things built and made — the craft in practice.',
-    children:['Project One','Project Two','Project Three'] },
+    children:[
+      { label:'Trax', slug:'trax' },
+      { label:'Hero', slug:'hero' },
+    ] },
   { id:'travels', label:'Travels', size:54, orbit:565, period:500, angle0:1.1, hue:'mint',
     blurb:'Photos and notes from places I\u2019ve been — a visual travel log.',
-    children:['Asia','Europe','Americas'] },
+    children:[
+      { label:'Alaska', slug:'alaska' },
+      { label:'Peru', slug:'peru' },
+      { label:'Europe', slug:'europe' },
+      { label:'Israel', slug:'israel' },
+      { label:'Hawaii', slug:'hawaii' },
+    ] },
   { id:'media', label:'Media', size:34, orbit:670, period:580, angle0:3.7, hue:'gold',
     blurb:'What I\u2019m consuming and recommending — books, film, shows, and favorites.',
-    children:['Reading now','Recently watched','All-time favorites'] },
+    children:[
+      { label:'Books', slug:'books' },
+      { label:'Recently watched', slug:'recently-watched' },
+      { label:'Shows', slug:'shows' },
+    ] },
 ];
 const TILT = 0.52; // squashes circular orbits into a viewed-at-an-angle ellipse — kept mild so paths stay readable
 const SUN_SIZE = 180; // 3x the original 60px
+const PAUSE_ORBITS = false; // set true to freeze the whole system, not just while reading a page
 
 const MIN_PLANET_PX = 38;    // touch-target floor
 const MIN_FIT_SCALE = 0.18;  // safety floor for pathological viewports
@@ -198,7 +261,7 @@ const CHROME_MARGIN_V = 50;  // top/bottom room (eyebrow/tag)
 const LABEL_ALLOWANCE = 28;  // extra room for label text past the farthest planet
 
 let W,H,cx,cy;
-let state = { expanded:false, activeId:null, t:0 };
+let state = { expanded:false, activeId:null, t:0, paused:false };
 let cam = { scale:1, focalX:0, focalY:0, px:0, py:0 };
 let camTarget = { scale:1, focalX:0, focalY:0 };
 // scale + orbit orientation, recomputed on every measure() so the whole
@@ -209,7 +272,7 @@ let fit = { scale:1, tiltX:1, tiltY:TILT };
 // persistent DOM references, built once (or rebuilt only when the
 // expanded/active set changes) — never destroyed on every animation frame,
 // so click handlers stay attached and reliable.
-const dom = { planets:{}, rings:{}, labels:{}, moons:{}, activeEdge:null };
+const dom = { planets:{}, rings:{}, labels:{}, activeEdge:null };
 
 function measure(){ W=innerWidth; H=innerHeight; cx=W/2; cy=H/2; computeFit(); setCamTarget(); }
 
@@ -231,18 +294,10 @@ function computeFit(){
   fit = { scale, tiltX, tiltY };
 }
 
-// NOTE: panelWidthPx() mirrors the #panel CSS width rules (lines ~114, ~135)
-// — keep them in sync if those change.
-function panelWidthPx(){ return W <= 640 ? W : Math.min(420, W*0.86); }
-
 function setCamTarget(){
-  if(!state.expanded){ camTarget = { scale:1, focalX:cx, focalY:cy }; }
-  else {
-    const pw = panelWidthPx();
-    const visibleW = Math.max(0, W - pw);
-    const focalX = visibleW > 60 ? visibleW/2 : W*0.5;
-    camTarget = { scale:2.0, focalX, focalY:H*0.5 };
-  }
+  camTarget = state.expanded
+    ? { scale:2.0, focalX:cx, focalY:cy }
+    : { scale:1, focalX:cx, focalY:cy };
 }
 
 function effOrbit(p){ return p.orbit*fit.scale; }
@@ -310,7 +365,7 @@ function buildStatic(){
   dom.planets={}; dom.rings={}; dom.labels={};
 
   const sun = mkEl('div','body sun'); sun.style.width=sun.style.height=effSunSize()+'px';
-  sun.onclick = ()=>{ if(state.expanded) collapse(); };
+  sun.onclick = ()=>{ if(state.expanded) navigateTo(null); };
   const sl = mkEl('div','sun-label'); sl.textContent='WELCOME';
   sun.appendChild(sl);
   graph.appendChild(sun);
@@ -322,7 +377,7 @@ function buildStatic(){
 
     const node = mkEl('div','body planet planet-'+p.hue);
     node.style.width = node.style.height = effSize(p,false)+'px';
-    node.onclick = ()=> selectPlanet(p.id);
+    node.onclick = ()=> navigateTo(p.id);
     graph.appendChild(node); dom.planets[p.id]=node;
 
     const label = mkEl('div','planet-label');
@@ -332,12 +387,9 @@ function buildStatic(){
 }
 
 function buildDynamic(){
-  // rebuild only the moon layer — happens rarely (on select/collapse), not every frame
-  Object.values(dom.moons).forEach(m=>{ m.node.remove(); m.label.remove(); m.edge.remove(); });
-  dom.moons = {};
+  // toggles the active/dim visual state — happens rarely (on open/close), not every frame
   if(dom.activeEdge){ dom.activeEdge.remove(); dom.activeEdge=null; }
   const svg = document.getElementById('orbits');
-  const graph = document.getElementById('graph');
 
   planets.forEach(p=>{
     const isActive = state.activeId===p.id;
@@ -354,19 +406,6 @@ function buildDynamic(){
 
   dom.activeEdge = mkSvg('line','edge');
   svg.appendChild(dom.activeEdge);
-
-  const active = planets.find(p=>p.id===state.activeId);
-  active.children.forEach((label,i)=>{
-    const node = mkEl('div','body moon');
-    node.style.width = node.style.height = '9px';
-    node.onclick = ()=> openItem(label);
-    graph.appendChild(node);
-    const lab = mkEl('div','moon-label'); lab.textContent = label;
-    graph.appendChild(lab);
-    const edge = mkSvg('line','edge'); edge.setAttribute('opacity','0.35');
-    svg.appendChild(edge);
-    dom.moons[label+i] = { node, label:lab, edge, i };
-  });
 }
 
 function updateFrame(){
@@ -395,20 +434,6 @@ function updateFrame(){
     if(isActive && dom.activeEdge){
       dom.activeEdge.setAttribute('x1',sunScreen.x); dom.activeEdge.setAttribute('y1',sunScreen.y);
       dom.activeEdge.setAttribute('x2',sp.x); dom.activeEdge.setAttribute('y2',sp.y);
-
-      const active = planets.find(x=>x.id===state.activeId);
-      active.children.forEach((label2,i)=>{
-        const mOrbit = 60 + i*26, mPeriod = 26+i*9, mAngle = state.t*(2*Math.PI/mPeriod)+i*2.1;
-        const mwx = wp.x + Math.cos(mAngle)*mOrbit*fit.tiltX, mwy = wp.y + Math.sin(mAngle)*mOrbit*fit.tiltY;
-        const msp = screenOf(mwx,mwy);
-        const m = dom.moons[label2+i];
-        if(!m) return;
-        m.node.style.left = msp.x+'px'; m.node.style.top = msp.y+'px';
-        m.node.style.width = m.node.style.height = (9*cam.scale)+'px';
-        m.label.style.left = (msp.x+12)+'px'; m.label.style.top = (msp.y-6)+'px';
-        m.edge.setAttribute('x1',sp.x); m.edge.setAttribute('y1',sp.y);
-        m.edge.setAttribute('x2',msp.x); m.edge.setAttribute('y2',msp.y);
-      });
     }
   });
 }
@@ -420,38 +445,156 @@ function spawnPulse(x,y){
   setTimeout(()=>p.remove(),850);
 }
 
-function selectPlanet(id){
-  const p = planets.find(x=>x.id===id);
-  const wp = worldPos(p, state.t);
-  const sp = screenOf(wp.x, wp.y);
-  spawnPulse(sp.x, sp.y);
-
-  state.expanded = true; state.activeId = id;
-  document.getElementById('app').classList.add('expanded');
-  setCamTarget();
-  buildDynamic();
-
-  document.getElementById('pTitle').textContent = p.label;
-  document.getElementById('pBlurb').textContent = p.blurb;
-  document.getElementById('pItems').innerHTML = p.children.map((c,i)=>
-    `<div class="item" onclick="openItem('${c.replace(/'/g,"")}')"><span>${String(i+1).padStart(2,'0')}</span>${c}</div>`).join('');
-}
-function openItem(label){
-  document.getElementById('pTitle').textContent = label;
-  document.getElementById('pBlurb').textContent = '[Placeholder — content for “'+label+'” goes here.]';
-}
 function collapse(){
+  hidePageOverlay();
   state.expanded=false; state.activeId=null;
-  document.getElementById('app').classList.remove('expanded');
   setCamTarget();
   buildDynamic();
 }
-window.selectPlanet=selectPlanet; window.openItem=openItem; window.collapse=collapse;
+
+function showPageOverlay(){
+  document.getElementById('page').classList.add('open');
+  document.getElementById('page').setAttribute('aria-hidden','false');
+  document.getElementById('app').setAttribute('aria-hidden','true');
+  state.paused = true;
+}
+function hidePageOverlay(){
+  const pageEl = document.getElementById('page');
+  pageEl.classList.remove('open');
+  pageEl.setAttribute('aria-hidden','true');
+  document.getElementById('app').removeAttribute('aria-hidden');
+  state.paused = false;
+}
+
+function renderPageNav(p, activeSlug){
+  const nav = document.getElementById('pageNav');
+  nav.innerHTML = '';
+  p.children.forEach(c=>{
+    const a = document.createElement('a');
+    a.className = 'page-nav-link' + (c.slug===activeSlug ? ' active' : '');
+    a.textContent = c.label;
+    if(c.href){
+      a.href = c.href; a.target = '_blank'; a.rel = 'noopener';
+    } else {
+      a.href = pathFor(p.id, c.slug);
+      a.onclick = (e)=>{ e.preventDefault(); navigateTo(p.id, c.slug); };
+    }
+    nav.appendChild(a);
+  });
+}
+
+// resolver: a per-heading file wins if it exists, otherwise the whole-planet
+// file is used — dropping in content/<planet>/<slug>.html later needs no code change
+const pageCache = new Map();
+async function fetchText(url){
+  const res = await fetch(url, { cache:'no-store' });
+  if(!res.ok) throw new Error('not found: '+url);
+  const text = await res.text();
+  // vercel.json's catch-all SPA rewrite can't exclude content/ by pattern
+  // (Vercel's route matcher rejects lookahead regex), so a missing fragment
+  // comes back as a 200 containing this whole document instead of a real
+  // 404 — treat that the same as not-found so the resolver still falls
+  // through instead of rendering the homepage inside the overlay
+  if(/<!doctype html/i.test(text) || /<html[\s>]/i.test(text)) throw new Error('not found (app shell): '+url);
+  return text;
+}
+async function loadFragment(planetId, slug){
+  const wholeUrl = `content/${planetId}.html`;
+  if(slug){
+    const perHeadingUrl = `content/${planetId}/${slug}.html`;
+    if(pageCache.has(perHeadingUrl)) return pageCache.get(perHeadingUrl);
+    if(!pageCache.has(wholeUrl)){
+      try {
+        const html = await fetchText(perHeadingUrl);
+        pageCache.set(perHeadingUrl, html);
+        return html;
+      } catch(e){ /* no per-heading file yet — fall through to the whole-planet file */ }
+    }
+  }
+  if(pageCache.has(wholeUrl)) return pageCache.get(wholeUrl);
+  const html = await fetchText(wholeUrl);
+  pageCache.set(wholeUrl, html);
+  return html;
+}
+
+// clicking a planet zooms the camera onto it and opens its reading overlay in one
+// step — there's no separate "zoomed but browsing headings" screen anymore. A slug
+// scrolls straight to that heading; without one the overlay opens at the top.
+let pageRequestId = 0;
+function openPlanet(id, slug){
+  const p = planets.find(x=>x.id===id);
+  if(!p){ navigateTo(null); return; }
+
+  if(state.activeId !== id || !state.expanded){
+    const wp = worldPos(p, state.t);
+    const sp = screenOf(wp.x, wp.y);
+    spawnPulse(sp.x, sp.y);
+    state.expanded = true; state.activeId = id;
+    setCamTarget();
+    buildDynamic();
+  }
+
+  showPageOverlay();
+  document.getElementById('pageEyebrow').textContent = p.label;
+  renderPageNav(p, slug);
+
+  const reqId = ++pageRequestId;
+  const bodyEl = document.getElementById('pageBody');
+  bodyEl.innerHTML = '<p class="page-status">Loading…</p>';
+  loadFragment(id, slug).then(html => {
+    if(reqId !== pageRequestId) return; // superseded by a newer navigation
+    bodyEl.innerHTML = html;
+    const heading = slug && document.getElementById(slug);
+    if(heading){
+      heading.setAttribute('tabindex','-1');
+      heading.scrollIntoView({ block:'start' });
+      heading.focus({ preventScroll:true });
+    } else {
+      bodyEl.scrollTop = 0;
+    }
+  }).catch(err => {
+    if(reqId !== pageRequestId) return;
+    bodyEl.innerHTML = '<p class="page-status">Couldn’t load this page. Try refreshing, or use ✕ back.</p>';
+  });
+}
+
+function closePage(){
+  if(!document.getElementById('page').classList.contains('open')) return;
+  navigateTo(null);
+}
+
+function pathFor(planetId, slug){
+  if(!planetId) return '/';
+  return slug ? `/${planetId}/${slug}` : `/${planetId}`;
+}
+function navigateTo(planetId, slug){
+  history.pushState(null, '', pathFor(planetId, slug));
+  applyPath();
+}
+function applyPath(){
+  const segments = location.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  const [planetId, slug] = segments;
+  const p = planets.find(x=>x.id===planetId);
+
+  if(!p){
+    if(location.pathname !== '/') history.replaceState(null,'','/');
+    collapse();
+    return;
+  }
+  const child = slug && p.children.find(c=>c.slug===slug && !c.href);
+  if(slug && !child) history.replaceState(null,'',pathFor(p.id)); // unknown slug or a link-only child — normalize
+  openPlanet(p.id, child ? slug : undefined);
+}
+addEventListener('popstate', applyPath);
+addEventListener('keydown', (e)=>{
+  if(e.key==='Escape' && document.getElementById('page').classList.contains('open')) closePage();
+});
+window.closePage=closePage;
 
 let last = performance.now();
 function loop(now){
   const dt = (now-last)/1000; last = now;
-  state.t += dt;
+  if(!state.paused && !PAUSE_ORBITS) state.t += dt;
   cam.scale += (camTarget.scale-cam.scale)*0.08;
   cam.focalX += (camTarget.focalX-cam.focalX)*0.08;
   cam.focalY += (camTarget.focalY-cam.focalY)*0.08;
@@ -466,6 +609,7 @@ function init(){
   measure(); drawStars();
   cam.px=0; cam.py=0; cam.focalX=cx; cam.focalY=cy;
   buildStatic(); buildDynamic();
+  applyPath();
   requestAnimationFrame(loop);
 }
 addEventListener('resize', ()=>{ measure(); drawStars(); applyLabelScale(); });
